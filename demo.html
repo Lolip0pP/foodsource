@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+
+<html lang="ru"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f7f4">
+    <title>FoodSource — поставщики продуктов</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f5f7f4;
+            --surface: #fff;
+            --ink: #17231c;
+            --muted: #66736b;
+            --line: #e2e9e3;
+            --green: #176b45;
+            --green-dark: #105437;
+            --green-soft: #e8f4ec;
+            --amber: #915616;
+            --amber-soft: #fff4df;
+            --red: #a93636;
+            --red-soft: #fff0ef;
+            --shadow: 0 12px 36px rgba(23, 53, 35, .07);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font-size: 15px;
+            line-height: 1.55;
+        }
+
+        button,
+        input,
+        textarea {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        a {
+            color: var(--green);
+        }
+
+        .shell {
+            width: min(1080px, calc(100% - 36px));
+            margin: 0 auto;
+            padding: 26px 0 64px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 38px;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: inherit;
+            text-decoration: none;
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: -.04em;
+        }
+
+        .brand-mark {
+            display: grid;
+            place-items: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            background: var(--green);
+            color: white;
+            font-size: 18px;
+        }
+
+        .api-state {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #b5c1b8;
+        }
+
+        .dot.ok {
+            background: #28a568;
+        }
+
+        .dot.bad {
+            background: #d65b54;
+        }
+
+        .hero {
+            max-width: 720px;
+            margin: 0 auto 28px;
+            text-align: center;
+        }
+
+        .eyebrow {
+            margin: 0 0 10px;
+            color: var(--green);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(32px, 5vw, 48px);
+            line-height: 1.1;
+            letter-spacing: -.05em;
+        }
+
+        .hero p {
+            max-width: 600px;
+            margin: 14px auto 0;
+            color: var(--muted);
+            font-size: 16px;
+        }
+
+        .surface {
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            background: var(--surface);
+            box-shadow: var(--shadow);
+        }
+
+        .search-panel {
+            max-width: 820px;
+            margin: 0 auto;
+            padding: clamp(18px, 4vw, 30px);
+        }
+
+        .field-label {
+            display: block;
+            margin: 0 0 7px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .hint {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        input[type="text"],
+        input[type="url"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            border: 1px solid #d6e0d8;
+            border-radius: 11px;
+            padding: 12px 13px;
+            outline: none;
+            background: #fff;
+            color: var(--ink);
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(23, 107, 69, .12);
+        }
+
+        .query-input {
+            font-size: 16px !important;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 180px;
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .advanced {
+            margin-top: 18px;
+            border-top: 1px solid var(--line);
+            padding-top: 15px;
+        }
+
+        .advanced summary,
+        .result-details summary {
+            color: var(--green);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 750;
+        }
+
+        .weight-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-top: 14px;
+        }
+
+        .weight-row label {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 4px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--green);
+        }
+
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .btn {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 9px;
+            min-height: 44px;
+            border: 1px solid var(--line);
+            border-radius: 11px;
+            padding: 9px 16px;
+            background: white;
+            color: var(--ink);
+            font-weight: 700;
+            text-decoration: none;
+            transition: transform .15s, background .15s, border-color .15s;
+        }
+
+        .btn:hover {
+            border-color: #a9c6b2;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            border-color: var(--green);
+            background: var(--green);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            border-color: var(--green-dark);
+            background: var(--green-dark);
+        }
+
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: .55;
+            transform: none;
+        }
+
+        .btn-small {
+            min-height: 36px;
+            padding: 6px 11px;
+            font-size: 13px;
+        }
+
+        .status {
+            max-width: 820px;
+            margin: 18px auto 0;
+        }
+
+        .status-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 15px 17px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: var(--surface);
+        }
+
+        .status-box.info {
+            border-color: #d6e8dc;
+            background: #f6fbf7;
+        }
+
+        .status-box.error {
+            border-color: #f0d1ce;
+            background: var(--red-soft);
+            color: #792e2b;
+        }
+
+        .status-box.warning {
+            border-color: #f0dfbd;
+            background: var(--amber-soft);
+            color: #714610;
+        }
+
+        .status-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .status-title {
+            display: block;
+            font-weight: 750;
+        }
+
+        .status-detail {
+            display: block;
+            margin-top: 2px;
+            font-size: 13px;
+            opacity: .82;
+            overflow-wrap: anywhere;
+        }
+
+
+        .progress-track {
+            height: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+            border-radius: 10px;
+            background: #dfe9e1;
+        }
+
+        .progress-bar {
+            width: 28%;
+            height: 100%;
+            border-radius: inherit;
+            background: var(--green);
+            animation: progress 12s ease-in-out infinite alternate;
+            will-change: transform;
+        }
+
+        @keyframes progress {
+            from {
+                transform: translateX(-100%);
+            }
+
+            to {
+                transform: translateX(357%);
+            }
+        }
+
+
+        .results-head {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 18px;
+            margin: 42px 0 16px;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 23px;
+            letter-spacing: -.035em;
+        }
+
+        .results-meta {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .client-filter {
+            width: min(260px, 100%);
+        }
+
+        .client-filter input {
+            padding: 9px 11px;
+            font-size: 13px;
+        }
+
+        .recommendation {
+            margin-bottom: 14px;
+            padding: 19px 21px;
+            border: 1px solid #cfe6d7;
+            border-radius: 16px;
+            background: linear-gradient(120deg, #eef8f1, #fff);
+        }
+
+        .recommendation-title {
+            margin: 0 0 5px;
+            color: var(--green-dark);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .recommendation p {
+            margin: 0;
+        }
+
+        .supplier-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .supplier-card {
+            padding: clamp(17px, 3vw, 23px);
+        }
+
+        .supplier-card.best {
+            border-color: #aad2b8;
+            box-shadow: 0 8px 28px rgba(23, 107, 69, .09);
+        }
+
+        .card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .supplier-title {
+            margin: 0;
+            font-size: 19px;
+            letter-spacing: -.025em;
+        }
+
+        .domain {
+            margin: 3px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .score {
+            min-width: 60px;
+            padding: 6px 10px;
+            border-radius: 10px;
+            background: var(--green-soft);
+            color: var(--green-dark);
+            text-align: center;
+            font-weight: 850;
+        }
+
+        .score small {
+            display: block;
+            font-size: 10px;
+            font-weight: 650;
+        }
+
+        .facts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px 20px;
+            margin: 20px 0 15px;
+        }
+
+        .fact-label {
+            display: block;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 750;
+            letter-spacing: .045em;
+            text-transform: uppercase;
+        }
+
+        .fact-value {
+            display: block;
+            margin-top: 3px;
+            overflow-wrap: anywhere;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 12px 0;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 999px;
+            background: var(--green-soft);
+            color: var(--green-dark);
+            font-size: 12px;
+        }
+
+        .tag.muted {
+            background: #f0f2f0;
+            color: var(--muted);
+        }
+
+        .reasons {
+            margin: 12px 0 0;
+            padding-left: 19px;
+            color: var(--green-dark);
+            font-size: 13px;
+        }
+
+        .missing {
+            margin: 10px 0 0;
+            color: var(--amber);
+            font-size: 12px;
+        }
+
+        .result-details {
+            margin-top: 16px;
+            border-top: 1px solid var(--line);
+            padding-top: 13px;
+        }
+
+        .breakdown {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 11px 20px;
+            margin-top: 12px;
+        }
+
+        .breakdown-item {
+            display: grid;
+            grid-template-columns: 110px 1fr 38px;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .bar {
+            height: 6px;
+            overflow: hidden;
+            border-radius: 9px;
+            background: #edf1ed;
+        }
+
+        .bar span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: var(--green);
+        }
+
+        .card-footer {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-top: 17px;
+        }
+
+        .source-link {
+            margin-left: auto;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .comparison {
+            margin-top: 18px;
+            padding: 18px;
+        }
+
+        .comparison h3 {
+            margin: 0 0 10px;
+            font-size: 16px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 570px;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            padding: 9px 10px;
+            border: 1px solid var(--line);
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f4f8f4;
+        }
+
+        .empty {
+            padding: 34px 20px;
+            border: 1px dashed #cbd8cd;
+            border-radius: 16px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .empty strong {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--ink);
+            font-size: 16px;
+        }
+
+        .notes {
+            display: grid;
+            gap: 7px;
+            margin: 0;
+            padding-left: 19px;
+        }
+
+        .settings {
+            margin: 22px 0 0;
+        }
+
+        .settings summary {
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .settings-box {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: end;
+            gap: 12px;
+            margin-top: 12px;
+            padding: 15px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: #fff;
+        }
+
+        .settings-box input {
+            font-size: 13px;
+        }
+
+        .fine-print {
+            margin: 25px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .hide {
+            display: none !important;
+        }
+
+        @media (max-width: 700px) {
+            .shell {
+                width: min(100% - 24px, 600px);
+                padding-top: 16px;
+            }
+
+            .topbar {
+                margin-bottom: 28px;
+            }
+
+            .hero {
+                margin-bottom: 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .weight-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .results-head {
+                align-items: stretch;
+                flex-direction: column;
+                margin-top: 32px;
+            }
+
+            .client-filter {
+                width: 100%;
+            }
+
+            .facts-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .breakdown {
+                grid-template-columns: 1fr;
+            }
+
+            .source-link {
+                width: 100%;
+                margin-left: 0;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .api-state {
+                font-size: 0;
+            }
+
+            .api-state .dot {
+                width: 10px;
+                height: 10px;
+            }
+
+            .actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .weight-grid {
+                gap: 10px;
+            }
+
+            .facts-grid {
+                gap: 12px;
+            }
+
+            .settings-box {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                animation-duration: .01ms !important;
+                transition-duration: .01ms !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="shell" id="top">
+        <header class="topbar">
+            <a class="brand" href="#top" aria-label="FoodSource — главная">
+                <span class="brand-mark" aria-hidden="true">F</span><span>FoodSource</span>
+            </a>
+        </header>
+
+        <section class="hero">
+            <p class="eyebrow">B2B-поиск поставщиков</p>
+            <h1>Найдите поставщика,<br>которому можно доверять</h1>
+            <p>Сравните предложения по цене, минимальному заказу, сертификатам и условиям доставки.</p>
+        </section>
+
+        <section class="surface search-panel" aria-label="Запрос в сохранённом примере">
+            <span class="field-label">Пример поискового запроса</span>
+            <p class="query-input">Мука пшеничная в/с оптом</p>
+            <p class="hint">Город доставки: Москва. Ниже показан сохранённый результат поиска — новый запрос не выполняется.</p>
+        </section>
+
+        <section id="output" class="">
+            <div class="results-head">
+                <div>
+                    <h2>Результаты поиска</h2>
+                    <p class="results-meta" id="resultsMeta">Запрос: «мука пшеничная в/с оптом поставщики Москва» · найдено карточек: 4 из 8</p>
+                </div>
+
+            </div>
+            <div class="recommendation" id="recommendation"><p class="recommendation-title">Рекомендация сервиса</p><p>Сначала связаться с «Бизнесторг»: работает в городе Москва. Не найдено на сайте: минимальный заказ, сертификаты, срок доставки. Данные взяты с сайта и могли устареть, поэтому уточните цену и сертификаты у поставщика.</p></div>
+            <div class="supplier-list" id="supplierList"><article class="surface supplier-card best">
+                    <div class="card-head"><div><h3 class="supplier-title">★ Бизнесторг</h3><p class="domain"><a href="https://biznestorg-sea.ru/market/bakaleya/muka/" target="_blank" rel="noopener noreferrer">biznestorg-sea.ru</a></p></div><div class="score">100<small>баллов</small></div></div>
+                    <div class="facts-grid"><div><span class="fact-label">Компания</span><span class="fact-value">Бизнесторг</span></div><div><span class="fact-label">Продукция</span><span class="fact-value">Мука 'Макфа', Мука 'Сокольники', Мука 'Лимак', Мука 'Липецкая', Мука 'Ладья', Мука 'Сокольники' (1 кг), Дрожжи 'Nevada', Дрожжи 'Saf-Moment', Дрожжи 'Люкс' ЭКСТРА, Дрожжи 'ДСЛ', Дрожжи 'Saf-Instant', Дрожжи 'Saf-Levur', Дрожжи 'Воронеж'</span></div><div><span class="fact-label">Цена</span><span class="fact-value">65 ₽</span></div><div><span class="fact-label">Минимальный заказ</span><span class="fact-value">Не указано</span></div><div><span class="fact-label">Доставка</span><span class="fact-value">Быстрая доставка по Москве и области по указанному адресу.</span></div><div><span class="fact-label">Регионы</span><span class="fact-value">Москва, Московская область</span></div><div><span class="fact-label">Телефон</span><span class="fact-value">+7 (495) 762 08 04</span></div><div><span class="fact-label">Email</span><span class="fact-value">info@biznestorg-sea.ru</span></div><div><span class="fact-label">Данные на сайте</span><span class="fact-value">24 окт. 2026 г.</span></div></div>
+                    <div class="tags"><span class="tag muted">Мука 'Макфа'</span><span class="tag muted">Мука 'Сокольники'</span><span class="tag muted">Мука 'Лимак'</span><span class="tag muted">Мука 'Липецкая'</span><span class="tag muted">Мука 'Ладья'</span><span class="tag muted">Мука 'Сокольники' (1 кг)</span><span class="tag muted">Дрожжи 'Nevada'</span><span class="tag muted">Дрожжи 'Saf-Moment'</span><span class="tag muted">Дрожжи 'Люкс' ЭКСТРА</span><span class="tag muted">Дрожжи 'ДСЛ'</span><span class="tag muted">Дрожжи 'Saf-Instant'</span><span class="tag muted">Дрожжи 'Saf-Levur'</span><span class="tag muted">Дрожжи 'Воронеж'</span></div>
+                    <p>Купить данные изделия можно оптом или в розницу в интернет-магазине «Бизнесторг».</p>
+                    <ul class="reasons"><li>работает в городе Москва</li></ul>
+                    <p class="missing">Не найдено: минимальный заказ, сертификаты, срок доставки</p>
+                    <details class="result-details"><summary>Оценка и полнота данных</summary>
+                        <p class="hint">Уверенность: 36%. Оценка по каждому критерию:</p>
+                        <div class="breakdown"><div class="breakdown-item"><span>Цена</span><div class="bar"><span style="width:100%"></span></div><span>100%</span></div><div class="breakdown-item"><span>Мин. заказ</span><div class="bar"><span style="width:0%"></span></div><span>нет данных</span></div><div class="breakdown-item"><span>Сертификаты</span><div class="bar"><span style="width:0%"></span></div><span>нет данных</span></div><div class="breakdown-item"><span>Доставка</span><div class="bar"><span style="width:0%"></span></div><span>нет данных</span></div></div>
+                    </details>
+                    <div class="card-footer">
+
+                        <a class="btn btn-small" href="mailto:info@biznestorg-sea.ru">Написать</a><a class="btn btn-small" href="tel:+74957620804">Позвонить</a>
+
+                        <a class="source-link" href="https://biznestorg-sea.ru/market/bakaleya/muka/" target="_blank" rel="noopener noreferrer">Открыть источник ↗</a>
+                    </div>
+                </article><article class="surface supplier-card ">
+                    <div class="card-head"><div><h3 class="supplier-title">Натур Вектор</h3><p class="domain"><a href="https://naturevector.ru/product/muka-pshenichnaya-hlebopekarnaya-altajs/" target="_blank" rel="noopener noreferrer">naturevector.ru</a></p></div><div class="score">100<small>баллов</small></div></div>
+                    <div class="facts-grid"><div><span class="fact-label">Компания</span><span class="fact-value">Натур Вектор</span></div><div><span class="fact-label">Продукция</span><span class="fact-value">Мука пшеничная хлебопекарная Алтайская 1сорт 2кг</span></div><div><span class="fact-label">Цена</span><span class="fact-value">176,5 ₽</span></div><div><span class="fact-label">Минимальный заказ</span><span class="fact-value">Не указано</span></div><div><span class="fact-label">Доставка</span><span class="fact-value">Не указано</span></div><div><span class="fact-label">Регионы</span><span class="fact-value">Москва</span></div><div><span class="fact-label">Телефон</span><span class="fact-value">+7(495)269-83-70</span></div><div><span class="fact-label">Email</span><span class="fact-value">opt@naturevector.ru</span></div><div><span class="fact-label">Данные на сайте</span><span class="fact-value">24 окт. 2026 г.</span></div></div>
+                    <div class="tags"><span class="tag muted">Мука пшеничная хлебопекарная Алтайская 1сорт 2кг</span></div>
+                    
+                    <ul class="reasons"><li>работает в городе Москва</li></ul>
+                    <p class="missing">Не найдено: минимальный заказ, сертификаты, срок доставки</p>
+                    <details class="result-details"><summary>Оценка и полнота данных</summary>
+                        <p class="hint">Уверенность: 36%. Оценка по каждому критерию:</p>
+                        <div class="breakdown"><div class="breakdown-item"><span>Цена</span><div class="bar"><span style="width:100%"></span></div><span>100%</span></div><div class="breakdown-item"><span>Мин. заказ</span><div class="bar"><span style="width:0%"></span></div><span>нет данных</span></div><div class="breakdown-item"><span>Сертификаты</span><div class="bar"><span style="width:0%"></span></div><span>нет данных</span></div><div class="breakdown-item"><span>Доставка</span><div class="bar"><span style="width:0%"></span></div><span>нет данных</span></div></div>
+                    </details>
+                    <div class="card-footer">
+                        <a class="btn btn-small" href="mailto:opt@naturevector.ru">Написать</a><a class="btn btn-small" href="tel:+74952698370">Позвонить</a>
+                        <a class="source-link" href="https://naturevector.ru/product/muka-pshenichnaya-hlebopekarnaya-altajs/" target="_blank" rel="noopener noreferrer">Открыть источник ↗</a>
+                    </div>
+                </article><article class="surface supplier-card ">
+                    <div class="card-head"><div><h3 class="supplier-title">ПТК Экор</h3><p class="domain"><a href="https://ekorfish.com/products/muka-pshenichnaya-v-s-limak-10kg-1-10/" target="_blank" rel="noopener noreferrer">ekorfish.com</a></p></div><div class="score">73<small>баллов</small></div></div>
+                    <div class="facts-grid"><div><span class="fact-label">Компания</span><span class="fact-value">ПТК Экор</span></div><div><span class="fact-label">Продукция</span><span class="fact-value">Мука пшеничная в/с ГОСТ 1/10кг Лимак</span></div><div><span class="fact-label">Цена</span><span class="fact-value">59,29 ₽ / кг</span></div><div><span class="fact-label">Минимальный заказ</span><span class="fact-value">10 кг</span></div><div><span class="fact-label">Доставка</span><span class="fact-value">Доставка (бесплатно) — от 5 000 ₽</span></div><div><span class="fact-label">Регионы</span><span class="fact-value">Москва, Санкт-Петербург, Краснодар</span></div><div><span class="fact-label">Телефон</span><span class="fact-value">8 (800) 505-01-82</span></div><div><span class="fact-label">Email</span><span class="fact-value">Не указано</span></div><div><span class="fact-label">Данные на сайте</span><span class="fact-value">24 окт. 2026 г.</span></div></div>
+                    <div class="tags"><span class="tag muted">Мука пшеничная в/с ГОСТ 1/10кг Лимак</span></div>
+                    <p>Минимальная сумма заказа: Самовывоз — от 3 000 ₽ Доставка (бесплатно) — от 5 000 ₽</p>
+                    <ul class="reasons"><li>работает в городе Москва</li></ul>
+                    <p class="missing">Не найдено: срок доставки</p>
+                    <details class="result-details"><summary>Оценка и полнота данных</summary>
+                        <p class="hint">Уверенность: 79%. Оценка по каждому критерию:</p>
+                        <div class="breakdown"><div class="breakdown-item"><span>Цена</span><div class="bar"><span style="width:100%"></span></div><span>100%</span></div><div class="breakdown-item"><span>Мин. заказ</span><div class="bar"><span style="width:100%"></span></div><span>100%</span></div><div class="breakdown-item"><span>Сертификаты</span><div class="bar"><span style="width:0%"></span></div><span>0%</span></div><div class="breakdown-item"><span>Доставка</span><div class="bar"><span style="width:0%"></span></div><span>нет данных</span></div></div>
+                    </details>
+                    <div class="card-footer">
+                        <a class="btn btn-small" href="tel:88005050182">Позвонить</a>
+                        <a class="source-link" href="https://ekorfish.com/products/muka-pshenichnaya-v-s-limak-10kg-1-10/" target="_blank" rel="noopener noreferrer">Открыть источник ↗</a>
+                    </div>
+                </article><article class="surface supplier-card ">
+                    <div class="card-head"><div><h3 class="supplier-title">АО «Раменский комбинат хлебопродуктов»</h3><p class="domain"><a href="https://ramkhp.ru/shop/flour/" target="_blank" rel="noopener noreferrer">ramkhp.ru</a></p></div><div class="score">22<small>баллов</small></div></div>
+                    <div class="facts-grid"><div><span class="fact-label">Компания</span><span class="fact-value">АО «Раменский комбинат хлебопродуктов»</span></div><div><span class="fact-label">Продукция</span><span class="fact-value">Мука пшеничная хлебопекарная высший сорт — мешок 25 кг, Мука пшеничная хлебопекарная высший сорт т/м 'Печенов' — 20 кг, Мука пшеничная хлебопекарная высший сорт т/м 'Печенов' для пиццы — 10 кг, Мука пшеничная хлебопекарная высший сорт т/м 'Печенов' для пиццы — мешок 20 кг, Мука пшеничная хлебопекарная второй сорт — 50 кг, Мука пшеничная хлебопекарная высший сорт т/м 'Печенов' для пиццы — 2 кг, Мука пшеничная хлебопекарная высший сорт т/м 'Раменская' — 1 кг, Мука пшеничная хлебопекарная высший сорт т/м 'Раменская' — 2 кг, Мука пшеничная хлебопекарная сорт обойная т/м 'Печенов' цельнозерновая — 2 кг, Мука пшеничная хлебопекарная высший сорт — 10 кг, Мука пшеничная хлебопекарная высший сорт — 5 кг, Мука пшеничная хлебопекарная высший сорт — 50 кг, Мука пшеничная хлебопекарная высший сорт т/м 'Раменская' — 2 кг, Мука пшеничная хлебопекарная сорт обойная т/м 'Печенов' цельнозерновая — 2 кг, Мука пшеничная хлебопекарная высший сорт — 10 кг, Мука пшеничная хлебопекарная высший сорт — 5 кг, Мука пшеничная хлебопекарная высший сорт — 50 кг</span></div><div><span class="fact-label">Цена</span><span class="fact-value">808 ₽</span></div><div><span class="fact-label">Минимальный заказ</span><span class="fact-value">Не указано</span></div><div><span class="fact-label">Доставка</span><span class="fact-value">Доставка осуществляется во все регионы России. Стоимость доставки зависит от расстояния и рассчитывается индивидуально исходя из тарифа за 1 км. Оптовым покупателям возможна поставка муковозами.</span></div><div><span class="fact-label">Регионы</span><span class="fact-value">Москва, Санкт-Петербург, Самара, Казань, Калуга, Нижний Новгород, Рязань, Тверь, Тула, Уфа, Ярославль</span></div><div><span class="fact-label">Телефон</span><span class="fact-value">+7 495 223 18 14</span></div><div><span class="fact-label">Email</span><span class="fact-value">post@ramkhp.ru</span></div><div><span class="fact-label">Данные на сайте</span><span class="fact-value">24 окт. 2026 г.</span></div></div>
+                    <div class="tags"><span class="tag muted">Мука пшеничная хлебопекарная высший сорт — мешок 25 кг</span><span class="tag muted">Мука пшеничная хлебопекарная высший сорт т/м 'Печенов' — 20 кг</span><span class="tag muted">Мука пшеничная хлебопекарная высший сорт т/м 'Печенов' для пиццы — 10 кг</span><span class="tag muted">Мука пшеничная хлебопекарная высший сорт т/м 'Печенов' для пиццы — мешок 20 кг</span><span class="tag muted">Мука пшеничная хлебопекарная второй сорт — 50 кг</span><span class="tag muted">Мука пшеничная хлебопекарная высший сорт т/м 'Печенов' для пиццы — 2 кг</span><span class="tag muted">Мука пшеничная хлебопекарная высший сорт т/м 'Раменская' — 1 кг</span><span class="tag muted">Мука пшеничная хлебопекарная высший сорт т/м 'Раменская' — 2 кг</span><span class="tag muted">Мука пшеничная хлебопекарная сорт обойная т/м 'Печенов' цельнозерновая — 2 кг</span><span class="tag muted">Мука пшеничная хлебопекарная высший сорт — 10 кг</span><span class="tag muted">Мука пшеничная хлебопекарная высший сорт — 5 кг</span><span class="tag muted">Мука пшеничная хлебопекарная высший сорт — 50 кг</span><span class="tag muted">Мука пшеничная хлебопекарная высший сорт т/м 'Раменская' — 2 кг</span><span class="tag muted">Мука пшеничная хлебопекарная сорт обойная т/м 'Печенов' цельнозерновая — 2 кг</span><span class="tag muted">Мука пшеничная хлебопекарная высший сорт — 10 кг</span><span class="tag muted">Мука пшеничная хлебопекарная высший сорт — 5 кг</span><span class="tag muted">Мука пшеничная хлебопекарная высший сорт — 50 кг</span></div>
+                    <p>АО 'РАМЕНСКИЙ КОМБИНАТ ХЛЕБОПРОДУКТОВ' является одним из крупнейших зерноперерабатывающих предприятий Московской области и производит пшеничную муку без добавок и примесей с отличными хлебопекарными свойствами.</p>
+                    <ul class="reasons"><li>работает в городе Москва</li></ul>
+                    <p class="missing">Не найдено: минимальный заказ, сертификаты, срок доставки</p>
+                    <details class="result-details"><summary>Оценка и полнота данных</summary>
+                        <p class="hint">Уверенность: 36%. Оценка по каждому критерию:</p>
+                        <div class="breakdown"><div class="breakdown-item"><span>Цена</span><div class="bar"><span style="width:22%"></span></div><span>22%</span></div><div class="breakdown-item"><span>Мин. заказ</span><div class="bar"><span style="width:0%"></span></div><span>нет данных</span></div><div class="breakdown-item"><span>Сертификаты</span><div class="bar"><span style="width:0%"></span></div><span>нет данных</span></div><div class="breakdown-item"><span>Доставка</span><div class="bar"><span style="width:0%"></span></div><span>нет данных</span></div></div>
+                    </details>
+                    <div class="card-footer">
+                        <a class="btn btn-small" href="mailto:post@ramkhp.ru">Написать</a><a class="btn btn-small" href="tel:+74952231814">Позвонить</a>
+                        <a class="source-link" href="https://ramkhp.ru/shop/flour/" target="_blank" rel="noopener noreferrer">Открыть источник ↗</a>
+                    </div>
+                </article></div>
+
+        </section>
+
+        <p class="fine-print">Это сохранённый демонстрационный пример, а не актуальный поиск. Данные взяты с открытых сайтов и могут быть неполными или устаревшими — уточняйте условия у поставщика.</p>
+    </main>
+</body></html>
