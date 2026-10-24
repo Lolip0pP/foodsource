@@ -33,6 +33,7 @@ class ScoredSupplier(BaseModel):
     card: SupplierCard
     score: int
     confidence: float
+    low_data: bool = False
     reasons: list[str]
     missing: list[str]
     breakdown: dict[str, float | None]
@@ -41,6 +42,7 @@ class ScoredSupplier(BaseModel):
 class SearchRequest(BaseModel):
     query: str = Field(min_length=3, max_length=300, examples=["мука пшеничная в/с"])
     city: str | None = Field(default=None, examples=["Казань"])
+    category: str | None = Field(default=None, max_length=60, examples=["Ингредиенты"])
     max_results: int = Field(default=8, ge=1, le=15)
     weights: dict[str, float] | None = None
 

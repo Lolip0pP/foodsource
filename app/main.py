@@ -49,7 +49,7 @@ def build_deps(settings: Settings) -> Deps:
         return await yandex_search(search_sdk, q, n, poll_timeout=int(settings.search_timeout), create_sem=search_sem)
 
     async def fetch(url: str):
-        return await fetcher.fetch_text(url)
+        return await fetcher.fetch_site(url)
 
     async def extract(text: str, query: str) -> SupplierFacts | None:
         return await llm_extract(

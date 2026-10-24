@@ -6,6 +6,7 @@
 сайта с высокой ценой, что неверно.
 """
 
+import re
 from math import inf
 
 from .models import ScoredSupplier, SupplierCard, SupplierFacts
@@ -116,42 +117,67 @@ CITY_REGION_ALIASES = {
     "биробиджан": ("биробиджан", "биробиджана", "еврейская автономная область", "еао"),
     "якутск": ("якутск", "якутска", "якутия", "саха", "республика саха"),
     "южно-сахалинск": ("южно-сахалинск", "южно-сахалинска", "сахалин", "сахалинская область"),
-    "анадырь": ("анадырь", "анадыря", "чукoтка", "чукотский автономный округ"),
+    "анадырь": ("анадырь", "анадыря", "чукотка", "чукотский автономный округ"),
     "улан-удэ": ("улан-удэ", "улан-удэ", "бурятия", "республика бурятия"),
 }
 
 
+NATIONWIDE_TERMS = (
+    "рф", "россия", "россии", "по всей россии", "по всей территории", "по всей стране",
+    "вся страна", "вся россия", "все регионы", "все регионы россии",
+)
+
+
+def _norm(text: str) -> str:
+    return text.lower().replace("ё", "е")
+
+
+def _has_term(term: str, text: str) -> bool:
+    """Совпадение по границам слов: «мо» не найдётся внутри «Смоленск», «нск» внутри «Брянск»."""
+    if not term:
+        return False
+    return re.search(rf"(?<![\w-]){re.escape(term)}(?![\w-])", text) is not None
+
+
 def _location_terms(city: str) -> tuple[str, ...]:
-    normalized = city.strip().lower().replace("ё", "е")
+    normalized = _norm(city.strip())
     normalized = normalized.removeprefix("город ")
     aliases = CITY_REGION_ALIASES.get(normalized, ())
     return (normalized, *aliases)
+
+
+def _places(f: SupplierFacts) -> list[str]:
+    places = [_norm(p) for p in (f.regions or [])]
+    places.append(_norm(f.delivery_text or ""))
+    return places
+
+
+def _covers_city(places: list[str], city: str) -> bool:
+    return any(_has_term(term, place) for term in _location_terms(city) for place in places)
+
+
+def _covers_nationwide(places: list[str]) -> bool:
+    return any(_has_term(term, place) for term in NATIONWIDE_TERMS for place in places)
 
 
 def supports_city(f: SupplierFacts, city: str | None) -> bool:
     """Считает неизвестное покрытие допустимым, а явно не совпадающее — неподходящим."""
     if not city:
         return True
-    places = [p.lower().replace("ё", "е") for p in (f.regions or [])]
-    delivery = (f.delivery_text or "").lower().replace("ё", "е")
-    places.append(delivery)
+    places = _places(f)
     if not any(places):
         return True
-    if any(term and term in place for term in _location_terms(city) for place in places):
-        return True
-    nationwide_terms = ("рф", "россия", "по всей", "вся стран", "все регионы")
-    return any(term in place for term in nationwide_terms for place in places)
+    return _covers_city(places, city) or _covers_nationwide(places)
 
 
 def geo_factor(f: SupplierFacts, city: str | None) -> float:
-    """Множитель за географию: 1.0 своя область, 0.9 доставка по РФ, 0.7 не доставляет, 0.85 неизвестно."""
+    """Множитель за географию: 1.0 свой город/регион, 0.9 доставка по РФ, 0.7 не доставляет, 0.85 неизвестно."""
     if not city:
         return 1.0
-    places = [p.lower().replace("ё", "е") for p in (f.regions or [])]
-    places.append((f.delivery_text or "").lower().replace("ё", "е"))
-    if any(term and term in place for term in _location_terms(city) for place in places):
+    places = _places(f)
+    if _covers_city(places, city):
         return 1.0
-    if any(k in p for p in places for k in ("рф", "россия", "по всей", "вся стран", "все регионы")):
+    if _covers_nationwide(places):
         return 0.9
     if f.regions or f.delivery_text:
         return 0.7
@@ -187,10 +213,12 @@ def score_cards(
         total = sum(w[k] for k in active)
         base = sum(w[k] * v for k, v in active.items()) / total if total else 0.0
         geo = geo_factor(f, city)
-        score = round(100 * base * geo)
 
         all_w = sum(w[k] for k in feats if w.get(k, 0) > 0)
         confidence = round(total / all_w, 2) if all_w else 0.0
+        # Малый объём данных тянет балл вниз: 100 баллов по одному критерию были бы обманчивы.
+        # Множитель от 0.3 (данных нет) до 1.0 (все критерии найдены).
+        score = round(100 * base * geo * (0.3 + 0.7 * confidence))
         missing = [LABELS[k] for k, v in feats.items() if v is None and w.get(k, 0) > 0]
 
         reasons: list[str] = []
@@ -212,14 +240,14 @@ def score_cards(
                 card=c,
                 score=score,
                 confidence=confidence,
+                low_data=confidence < 0.5,
                 reasons=reasons,
                 missing=missing,
                 breakdown={k: (round(v, 2) if v is not None else None) for k, v in feats.items()},
             )
         )
 
-    # Сортировка: балл, скорректированный на уверенность в данных.
-    out.sort(key=lambda s: s.score * (0.6 + 0.4 * s.confidence), reverse=True)
+    out.sort(key=lambda s: (s.score, s.confidence), reverse=True)
     return out
 
 
@@ -230,6 +258,8 @@ def pick_recommendation(scored: list[ScoredSupplier]) -> str | None:
     name = top.card.facts.company_name or top.card.domain
     why = "; ".join(top.reasons[:3]) or "лучший балл среди найденных"
     tail = f" Не найдено на сайте: {', '.join(top.missing)}." if top.missing else ""
+    if top.low_data:
+        tail += " Данных мало, поэтому оценка осторожная."
     return (
         f"Сначала связаться с «{name}»: {why}.{tail} "
         "Данные взяты с сайта и могли устареть, поэтому уточните цену и сертификаты у поставщика."

@@ -34,7 +34,8 @@ def domain_of(url: str) -> str:
 
 
 def build_query(req: SearchRequest) -> str:
-    parts = [req.query, "поставщики"]
+    parts = [req.category.strip()] if req.category and req.category.strip() else []
+    parts += [req.query, "поставщики"]
     if req.city:
         parts.append(req.city)
     return " ".join(parts)

@@ -770,6 +770,21 @@
             <p class="hint">Опишите товар или требования. Поиск выполняется по сайтам поставщиков.</p>
             <div class="form-grid">
                 <div>
+                    <label class="field-label" for="category">Категория <span
+                            style="font-weight:400;color:var(--muted)">(необязательно)</span></label>
+                    <select id="category" name="category">
+                        <option value="">Любая</option>
+                        <option>Ингредиенты</option>
+                        <option>Молочная продукция</option>
+                        <option>Мясо и птица</option>
+                        <option>Овощи и фрукты</option>
+                        <option>Бакалея и крупы</option>
+                        <option>Напитки</option>
+                        <option>Упаковка</option>
+                        <option>Готовая продукция</option>
+                    </select>
+                </div>
+                <div>
                     <label class="field-label" for="city">Город доставки <span
                             style="font-weight:400;color:var(--muted)">(необязательно)</span></label>
                     <input id="city" name="city" type="text" maxlength="100" placeholder="Например, Казань">
@@ -963,6 +978,8 @@
                     };
                     const city = $("city").value.trim();
                     if (city) body.city = city;
+                    const category = $("category").value;
+                    if (category) body.category = category;
                     const created = await requestJson(`${apiBase()}/search`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -999,8 +1016,14 @@
             function formatPrice(value, unit) {
                 const price = `${formatNumber(value)} ₽`;
                 const normalizedUnit = String(unit || "").trim();
-                if (!normalizedUnit || /^(?:₽|руб(?:\.|ль|ля|лей)?|р\.?)$/iu.test(normalizedUnit)) return price;
+                if (!normalizedUnit) return `${price} (единица не указана)`;
+                if (/^(?:₽|руб(?:\.|ль|ля|лей)?|р\.?)$/iu.test(normalizedUnit)) return price;
                 return `${price} / ${normalizedUnit}`;
+            }
+
+            function shortList(items, limit = 5) {
+                const head = items.slice(0, limit).join(", ");
+                return items.length > limit ? `${head} и ещё ${items.length - limit}` : head;
             }
 
             function formatDate(value) {
@@ -1101,7 +1124,7 @@
                 const website = safeWebUrl(card.source_url);
                 const rows = [
                     ["Компания", facts.company_name || card.title || card.domain || "Не указано"],
-                    ["Продукция", products.join(", ") || "Не указано"],
+                    ["Продукция", shortList(products) || "Не указано"],
                     ["Цена", facts.price_per_unit == null ? null : formatPrice(facts.price_per_unit, facts.price_unit)],
                     ["Минимальный заказ", facts.min_order_qty == null ? null : `${formatNumber(facts.min_order_qty)} ${facts.min_order_unit || ""}`.trim()],
                     ["Доставка", [facts.delivery_text, facts.delivery_days != null ? `${facts.delivery_days} дн.` : null].filter(Boolean).join(" · ") || null],
@@ -1112,7 +1135,7 @@
                 ];
                 const factHtml = rows.map(([label, value]) => `<div><span class="fact-label">${escapeHtml(label)}</span><span class="fact-value">${escapeHtml(value || "Не указано")}</span></div>`).join("");
                 const certHtml = certs.map((cert) => `<span class="tag">${escapeHtml(cert)}</span>`).join("");
-                const productHtml = products.length ? products.map((product) => `<span class="tag muted">${escapeHtml(product)}</span>`).join("") : "";
+                const productHtml = products.length ? products.slice(0, 5).map((product) => `<span class="tag muted">${escapeHtml(product)}</span>`).join("") : "";
                 const reasons = Array.isArray(scored.reasons) ? scored.reasons : [];
                 const missing = Array.isArray(scored.missing) ? scored.missing : [];
                 const breakdown = scored.breakdown && typeof scored.breakdown === "object" ? scored.breakdown : {};
@@ -1127,6 +1150,7 @@
                 ].join("");
                 return `<article class="surface supplier-card ${index === 0 ? "best" : ""}">
                     <div class="card-head"><div><h3 class="supplier-title">${index === 0 ? "★ " : ""}${escapeHtml(facts.company_name || card.title || card.domain || "Поставщик")}</h3><p class="domain">${website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(card.domain || "Открыть сайт")}</a>` : escapeHtml(card.domain || "")}</p></div><div class="score">${score}<small>баллов</small></div></div>
+                    ${scored.low_data ? '<p class="missing">Мало данных: оценка осторожная, проверьте сайт вручную.</p>' : ""}
                     <div class="facts-grid">${factHtml}</div>
                     ${certHtml || productHtml ? `<div class="tags">${certHtml}${productHtml}</div>` : ""}
                     ${facts.notes ? `<p>${escapeHtml(facts.notes)}</p>` : ""}
@@ -1154,7 +1178,7 @@
                 const rows = [
                     ["Балл", (entry) => `${entry.score ?? "—"} / 100`],
                     ["Компания", (entry) => facts(entry).company_name || entry.card?.domain || "—"],
-                    ["Цена", (entry) => facts(entry).price_per_unit == null ? "Не указано" : formatPrice(facts(entry).price_per_unit, facts(entry).price_unit || "ед.")],
+                    ["Цена", (entry) => facts(entry).price_per_unit == null ? "Не указано" : formatPrice(facts(entry).price_per_unit, facts(entry).price_unit)],
                     ["Мин. заказ", (entry) => facts(entry).min_order_qty == null ? "Не указано" : `${formatNumber(facts(entry).min_order_qty)} ${facts(entry).min_order_unit || ""}`],
                     ["Срок доставки", (entry) => facts(entry).delivery_days == null ? "Не указано" : `${facts(entry).delivery_days} дн.`],
                     ["Сертификаты", (entry) => (facts(entry).certificates || []).join(", ") || "Не указано"],

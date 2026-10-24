@@ -10,12 +10,16 @@ from .models import SupplierFacts
 
 SYSTEM_PROMPT = """Ты извлекаешь данные о поставщике продуктов питания из текста веб-страницы.
 Верни ТОЛЬКО JSON-объект, без пояснений и без markdown. Ключи:
-company_name, products (список строк), min_order_qty (число), min_order_unit,
-price_per_unit (число), price_unit, certificates (список названий, как на странице),
+company_name, products (до 5 самых релевантных запросу позиций, без повторов),
+min_order_qty (число), min_order_unit,
+price_per_unit (цена за ОДНУ единицу, число), price_unit (единица: кг, шт, л, т),
+certificates (список названий, как на странице),
 delivery_days (целое число дней), delivery_text, regions (список), phone, email, notes.
 Правила:
 - Если значения нет на странице, ставь null (для списков — []). Не выдумывай и не оценивай.
-- Бери только то, что написано в тексте.
+- Бери только то, что написано в тексте. Текст может состоять из нескольких страниц сайта,
+  они разделены строками вида [страница: адрес].
+- Если рядом с ценой не указана единица измерения, ставь price_per_unit = null.
 - Если страница не похожа на страницу поставщика или производителя, верни
   {"company_name": null, "products": []}."""
 
@@ -33,6 +37,34 @@ def _first_number(value) -> float | None:
     return float(m.group().replace(",", ".")) if m else None
 
 
+MAX_PRODUCTS = 6
+
+
+def _norm_unit(value) -> str | None:
+    """'₽/кг' → 'кг', 'кг.' → 'кг': единицы должны быть сопоставимы между поставщиками."""
+    if value is None:
+        return None
+    unit = str(value).strip().lower()
+    if "/" in unit:
+        unit = unit.rsplit("/", 1)[-1]
+    unit = unit.strip(" .₽")
+    return unit or None
+
+
+def _dedupe(items: list, limit: int) -> list:
+    seen: set[str] = set()
+    out = []
+    for item in items:
+        text = str(item).strip()
+        key = re.sub(r"\s+", " ", text).casefold()
+        if text and key not in seen:
+            seen.add(key)
+            out.append(text)
+        if len(out) >= limit:
+            break
+    return out
+
+
 def sanitize(data: dict) -> dict:
     """Приводит типичные отклонения LLM ('от 500 кг', строка вместо списка) к схеме."""
     out = dict(data)
@@ -46,6 +78,9 @@ def sanitize(data: dict) -> dict:
             out[key] = [val]
         elif val is None and key != "certificates":
             out[key] = []
+    out["products"] = _dedupe(out.get("products") or [], MAX_PRODUCTS)
+    for key in ("price_unit", "min_order_unit"):
+        out[key] = _norm_unit(out.get(key))
     return out
 
 
